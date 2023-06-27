@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,8 +16,16 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	//r.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
 	r.GET("/", func(c *gin.Context) {
+		files, err := os.ReadDir("./upload")
+		if err != nil {
+			log.Println(err)
+			c.String(http.StatusBadRequest, fmt.Sprintf("got os err: %s", err.Error()))
+			return
+		}
+
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"title": "Main website",
+			"title":   "Main website",
+			"uploads": files,
 		})
 	})
 
@@ -52,13 +61,44 @@ func main() {
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 	r.POST("/upload", func(c *gin.Context) {
 		// single file
-		file, _ := c.FormFile("file")
+		file, err := c.FormFile("upload")
+		if err != nil {
+			log.Println(err)
+			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
+			return
+		}
 		log.Println(file.Filename)
 
 		// Upload the file to specific dst.
-		c.SaveUploadedFile(file, ".")
+		c.SaveUploadedFile(file, "./upload/"+file.Filename)
+		// FIXME: The redirect only seems to work with this status code.
+		c.Redirect(http.StatusMovedPermanently, "/")
+	})
 
-		c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
+	// Deleting files from a server.
+	r.POST("/deleteUploads", func(c *gin.Context) {
+		fileName := c.Query("fileName")
+		files, err := os.ReadDir("./upload")
+		if err != nil {
+			log.Println(err)
+			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
+			return
+		}
+		for _, file := range files {
+			if file.Name() == fileName {
+				err := os.Remove("./upload/" + fileName)
+				if err != nil {
+					log.Println(err)
+					c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
+					return
+				}
+				// FIXME: The redirect only seems to work with this status code.
+				c.Redirect(http.StatusMovedPermanently, "/")
+				return
+			}
+		}
+
+		c.String(http.StatusNotFound, fmt.Sprintf("file not found"))
 	})
 
 	// Multiple file upload example. Use curl to test it.

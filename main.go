@@ -16,16 +16,28 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	//r.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
 	r.GET("/", func(c *gin.Context) {
-		files, err := os.ReadDir("./upload")
+		dirInfo, err := os.Stat("./upload")
 		if err != nil {
 			log.Println(err)
 			c.String(http.StatusBadRequest, fmt.Sprintf("got os err: %s", err.Error()))
 			return
 		}
 
+		if dirInfo.IsDir() {
+			files, err := os.ReadDir("./upload")
+			if err != nil {
+				log.Println(err)
+				c.String(http.StatusBadRequest, fmt.Sprintf("got os err: %s", err.Error()))
+				return
+			}
+			c.HTML(http.StatusOK, "index.tmpl", gin.H{
+				"title":   "Main website",
+				"uploads": files,
+			})
+			return
+		}
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"title":   "Main website",
-			"uploads": files,
+			"title": "Main website",
 		})
 	})
 

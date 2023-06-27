@@ -16,7 +16,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	//r.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
 	r.GET("/", func(c *gin.Context) {
-		dirInfo, err := os.Stat("./upload")
+		dirInfo, err := os.Stat("./uploads")
 		if err != nil {
 			log.Println(err)
 			c.String(http.StatusBadRequest, fmt.Sprintf("got os err: %s", err.Error()))
@@ -24,7 +24,7 @@ func main() {
 		}
 
 		if dirInfo.IsDir() {
-			files, err := os.ReadDir("./upload")
+			files, err := os.ReadDir("./uploads")
 			if err != nil {
 				log.Println(err)
 				c.String(http.StatusBadRequest, fmt.Sprintf("got os err: %s", err.Error()))
@@ -82,7 +82,7 @@ func main() {
 		log.Println(file.Filename)
 
 		// Upload the file to specific dst.
-		c.SaveUploadedFile(file, "./upload/"+file.Filename)
+		c.SaveUploadedFile(file, "./uploads/"+file.Filename)
 		// FIXME: The redirect only seems to work with this status code.
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
@@ -90,7 +90,7 @@ func main() {
 	// Deleting files from a server.
 	r.POST("/deleteUploads", func(c *gin.Context) {
 		fileName := c.Query("fileName")
-		files, err := os.ReadDir("./upload")
+		files, err := os.ReadDir("./uploads")
 		if err != nil {
 			log.Println(err)
 			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
@@ -98,7 +98,7 @@ func main() {
 		}
 		for _, file := range files {
 			if file.Name() == fileName {
-				err := os.Remove("./upload/" + fileName)
+				err := os.Remove("./uploads/" + fileName)
 				if err != nil {
 					log.Println(err)
 					c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))

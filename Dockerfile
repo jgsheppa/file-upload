@@ -15,6 +15,7 @@ WORKDIR /
 
 COPY --from=builder /app ./
 COPY --from=builder /templates ./templates
+COPY --from=builder /uploads ./uploads
 
 EXPOSE 8080
 

@@ -8,7 +8,8 @@ RUN go mod download
 
 COPY . ./
 
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o app .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+RUN apt install build-essential
 
 FROM gcr.io/distroless/base-debian11:nonroot
 WORKDIR /

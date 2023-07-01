@@ -98,9 +98,13 @@ func main() {
 			log.Fatal(err)
 		}
 
-		s.File.Delete(conv)
+		err = s.File.Delete(conv)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		c.String(http.StatusNotFound, fmt.Sprintf("file not found"))
+		// FIXME: The redirect only seems to work with this status code.
+		c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
 	// Multiple file upload example. Use curl to test it.

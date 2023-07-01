@@ -1,4 +1,4 @@
-FROM golang:1.20.5-alpine3.18 AS builder
+FROM golang:1.20.5-bullseye AS builder
 WORKDIR /
 
 COPY go.mod ./

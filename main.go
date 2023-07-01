@@ -1,28 +1,35 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jgsheppa/gin-playground/models"
 )
 
 func main() {
+	s := models.NewServices("dev.db")
+	err := s.AutoMigrate()
+	if err != nil {
+		log.Fatal("Could not migrate database: %w", err)
+	}
+
 	r := gin.Default()
 
 	// HTML rendering example
 	r.LoadHTMLGlob("templates/*")
 	//r.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
 	r.GET("/", func(c *gin.Context) {
-		os.Chmod("./uploads/", 0777)
-		files, err := os.ReadDir("./uploads")
+		files, err := s.File.GetAll()
 		if err != nil {
-			log.Println(err)
-			c.String(http.StatusBadRequest, fmt.Sprintf("got os err: %s", err.Error()))
-			return
+			log.Fatal("Could not retrieve files: %w", err)
 		}
+
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"title":   "Main website",
 			"uploads": files,
@@ -67,36 +74,31 @@ func main() {
 			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
 			return
 		}
-		log.Println(file.Filename)
+		content, err := file.Open()
+		defer content.Close()
 
-		// Upload the file to specific dst.
-		c.SaveUploadedFile(file, "./uploads/"+file.Filename)
+		buf := bytes.NewBuffer(nil)
+		if _, err := io.Copy(buf, content); err != nil {
+			log.Fatal(err)
+		}
+
+		err = s.File.CreateFile(&models.File{Filename: file.Filename, FileBlob: buf.Bytes()})
+
+		// Upload the file to specific dst. TODO: use with BLOB storage.
+		// c.SaveUploadedFile(file, "./uploads/"+file.Filename)
 		// FIXME: The redirect only seems to work with this status code.
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
 	// Deleting files from a server.
 	r.POST("/deleteUploads", func(c *gin.Context) {
-		fileName := c.Query("fileName")
-		files, err := os.ReadDir("./uploads")
+		id := c.Query("id")
+		conv, err := strconv.Atoi(id)
 		if err != nil {
-			log.Println(err)
-			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
-			return
+			log.Fatal(err)
 		}
-		for _, file := range files {
-			if file.Name() == fileName {
-				err := os.Remove("./uploads/" + fileName)
-				if err != nil {
-					log.Println(err)
-					c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
-					return
-				}
-				// FIXME: The redirect only seems to work with this status code.
-				c.Redirect(http.StatusMovedPermanently, "/")
-				return
-			}
-		}
+
+		s.File.Delete(conv)
 
 		c.String(http.StatusNotFound, fmt.Sprintf("file not found"))
 	})

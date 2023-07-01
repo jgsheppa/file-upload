@@ -21,8 +21,8 @@
   <ol>
     {{ range .uploads }}
       <li>
-        <p>{{.Name}}</p>
-        <form action="/deleteUploads?fileName={{.Name}}" method="POST">
+        <p>{{.Filename}}</p>
+        <form action="/deleteUploads?id={{.ID}}" method="POST">
           <button type="submit">Delete Upload</button>
         </form>
       </li>

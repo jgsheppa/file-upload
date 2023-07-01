@@ -1,4 +1,4 @@
-FROM golang:1.20.5-bullseye AS builder
+FROM golang:1.20.5-alpine3.18 AS builder
 WORKDIR /
 
 COPY go.mod ./
@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o app .
 
 FROM gcr.io/distroless/base-debian11:nonroot
 WORKDIR /

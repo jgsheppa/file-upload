@@ -10,7 +10,7 @@ COPY . ./
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o /app -a -ldflags '-linkmode external -extldflags "-static"' .
 
-FROM gcr.io/distroless/base-debian11:nonroot
+FROM scratch
 WORKDIR /
 
 COPY --from=builder /app ./

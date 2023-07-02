@@ -8,8 +8,7 @@ RUN go mod download
 
 COPY . ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
-RUN apt install build-essential
+RUN CGO_ENABLED=1 GOOS=linux go build -o /app -a -ldflags '-linkmode external -extldflags "-static"' .
 
 FROM gcr.io/distroless/base-debian11:nonroot
 WORKDIR /

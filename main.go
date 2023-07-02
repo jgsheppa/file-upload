@@ -107,6 +107,17 @@ func main() {
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
+	r.GET("/download", func(c *gin.Context) {
+		id := c.Query("id")
+		idAsInt, err := strconv.Atoi(id)
+		if err != nil {
+			log.Fatal(err)
+		}
+		file, err := s.File.Get(idAsInt)
+
+		fmt.Printf("file: %v", file)
+	})
+
 	// Multiple file upload example. Use curl to test it.
 	// Similar to single file upload but with a loop.
 	//

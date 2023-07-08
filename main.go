@@ -6,13 +6,40 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
+	"github.com/getsentry/sentry-go"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/jgsheppa/gin-playground/models"
+	"github.com/joho/godotenv"
 )
 
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
 func main() {
+	sentryKey := os.Getenv("SENTRY_KEY")
+	environment := os.Getenv("ENVIRONMENT")
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:           sentryKey,
+		Environment:   environment,
+		Release:       "playground@1.0.0", // TODO: use git commit hash
+		EnableTracing: true,
+		Debug:         true,
+		// Set TracesSampleRate to 1.0 to capture 100%
+		// of transactions for performance monitoring.
+		// We recommend adjusting this value in production,
+		TracesSampleRate: 1.0,
+	}); err != nil {
+		fmt.Printf("Sentry initialization failed: %v\n", err)
+	}
+
 	s := models.NewServices("dev.db")
 	err := s.AutoMigrate()
 	if err != nil {
@@ -21,6 +48,18 @@ func main() {
 
 	r := gin.Default()
 
+	r.Use(sentrygin.New(sentrygin.Options{}))
+
+	// Could be used in an endpoint to identify which users
+	// have had issues with specific endpoints.
+	sentry.ConfigureScope(func(scope *sentry.Scope) {
+		scope.SetUser(sentry.User{Email: "jane.doe@example.com"})
+	})
+
+	// Flush buffered events before the program terminates.
+	defer sentry.Flush(2 * time.Second)
+
+	sentry.CaptureMessage("It works!")
 	// HTML rendering example
 	r.LoadHTMLGlob("templates/*")
 	//r.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
@@ -137,6 +176,20 @@ func main() {
 			c.SaveUploadedFile(file, ".")
 		}
 		c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
+	})
+
+	// Capture a Sentry error when there is a 500 error.
+	r.GET("/error", func(c *gin.Context) {
+		sentry.CaptureMessage("An Error!")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+	})
+
+	// Sentry recovers from panic errors
+	// and creates an issue, if a issues for
+	// fatal errors have been set.
+	r.GET("/fatal", func(c *gin.Context) {
+		defer sentry.Recover()
+		panic("A Fatal Error!")
 	})
 
 	// Cookie example

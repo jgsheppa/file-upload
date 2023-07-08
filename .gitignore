@@ -1,2 +1,6 @@
 /tmp
 dev.*
+
+.env
+
+Dockerfile

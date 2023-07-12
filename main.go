@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -47,8 +45,10 @@ func main() {
 		log.Fatal("Could not migrate database: %w", err)
 	}
 
-	r := gin.Default()
+	fileController := controllers.NewFile(s.File)
 
+	r := gin.Default()
+	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 	r.Use(sentrygin.New(sentrygin.Options{}))
 
 	// Could be used in an endpoint to identify which users
@@ -90,35 +90,13 @@ func main() {
 	})
 	r.GET("/routerRedirect2", controllers.RouterRedirectDestination)
 
-	// Upload file example. Use curl to test it.
-	//
-	// curl -X POST http://localhost:8080/upload \
-	// -F "file=@/Users/appleboy/test.zip" \
-	// -H "Content-Type: multipart/form-data"
-	r.MaxMultipartMemory = 8 << 20 // 8 MiB
-	r.POST("/upload", func(c *gin.Context) {
-		// single file
-		file, err := c.FormFile("upload")
-		if err != nil {
-			log.Println(err)
-			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
-			return
-		}
-		content, err := file.Open()
-		defer content.Close()
-
-		buf := bytes.NewBuffer(nil)
-		if _, err := io.Copy(buf, content); err != nil {
-			log.Fatal(err)
-		}
-
-		err = s.File.CreateFile(&models.File{Filename: file.Filename, FileBlob: buf.Bytes()})
-
-		// Upload the file to specific dst. TODO: use with BLOB storage.
-		// c.SaveUploadedFile(file, "./uploads/"+file.Filename)
-		// FIXME: The redirect only seems to work with this status code.
-		c.Redirect(http.StatusMovedPermanently, "/")
+	// YAML response example
+	r.GET("/someYAML", func(c *gin.Context) {
+		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
+
+	r.POST("/upload", fileController.Upload)
+	r.POST("/download", fileController.Download)
 
 	// Deleting files from a server.
 	r.POST("/deleteUploads", func(c *gin.Context) {
@@ -135,38 +113,6 @@ func main() {
 
 		// FIXME: The redirect only seems to work with this status code.
 		c.Redirect(http.StatusMovedPermanently, "/")
-	})
-
-	r.GET("/download", func(c *gin.Context) {
-		id := c.Query("id")
-		idAsInt, err := strconv.Atoi(id)
-		if err != nil {
-			log.Fatal(err)
-		}
-		file, err := s.File.Get(idAsInt)
-
-		fmt.Printf("file: %v", file)
-	})
-
-	// Multiple file upload example. Use curl to test it.
-	// Similar to single file upload but with a loop.
-	//
-	// curl -X POST http://localhost:8080/upload \
-	// -F "upload[]=@/Users/appleboy/test1.zip" \
-	// -F "upload[]=@/Users/appleboy/test2.zip" \
-	// -H "Content-Type: multipart/form-data"
-	r.POST("/uploadMultiple", func(c *gin.Context) {
-		// Multipart form
-		form, _ := c.MultipartForm()
-		files := form.File["upload[]"]
-
-		for _, file := range files {
-			log.Println(file.Filename)
-
-			// Upload the file to specific dst.
-			c.SaveUploadedFile(file, ".")
-		}
-		c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
 	})
 
 	// Capture a Sentry error when there is a 500 error.
@@ -189,5 +135,5 @@ func main() {
 	controllers.V2(r)
 
 	// Run the server per default on port 8080
-	r.Run()
+	r.Run(":3004")
 }

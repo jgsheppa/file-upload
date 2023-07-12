@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -27,7 +28,7 @@ func RouterRedirectDestination(c *gin.Context) {
 }
 
 func SentryError(c *gin.Context) {
-	sentry.CaptureMessage("An Error!")
+	sentry.CaptureException(errors.New("An Error!"))
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 }
 

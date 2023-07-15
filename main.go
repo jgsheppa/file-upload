@@ -3,10 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/getsentry/sentry-go"
 	sentrygin "github.com/getsentry/sentry-go/gin"
@@ -44,11 +41,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not migrate database: %w", err)
 	}
+	runServer(s)
+}
 
+func runServer(s *models.Services) {
 	fileController := controllers.NewFile(s.File)
 
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
+	r.LoadHTMLGlob("templates/*")
 	r.Use(sentrygin.New(sentrygin.Options{}))
 
 	// Could be used in an endpoint to identify which users
@@ -57,82 +58,14 @@ func main() {
 		scope.SetUser(sentry.User{Email: "jane.doe@example.com"})
 	})
 
-	// Flush buffered events before the program terminates.
-	defer sentry.Flush(2 * time.Second)
+	r.GET("/", fileController.GetFiles)
 
-	sentry.CaptureMessage("It works!")
-	// HTML rendering example
-	r.LoadHTMLGlob("templates/*")
-	//r.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
-	r.GET("/", func(c *gin.Context) {
-		files, err := s.File.GetAll()
-		if err != nil {
-			log.Fatal("Could not retrieve files: %w", err)
-		}
-
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"title":   "Main website",
-			"uploads": files,
-		})
-	})
-
-	// Basic ping example
-	r.GET("/ping", controllers.Ping)
-
-	// HTTP redirect example
-	r.GET("/httpRedirect", controllers.Redirect)
-	r.GET("/httpRedirect2", controllers.RedirectDestination)
-
-	// Router redirect example
-	r.GET("/routerRedirect", func(c *gin.Context) {
-		c.Request.URL.Path = "/routerRedirect2"
-		r.HandleContext(c)
-	})
-	r.GET("/routerRedirect2", controllers.RouterRedirectDestination)
-
-	// YAML response example
-	r.GET("/someYAML", func(c *gin.Context) {
-		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
-	})
-
-	r.POST("/upload", fileController.Upload)
-	r.POST("/download", fileController.Download)
-
-	// Deleting files from a server.
-	r.POST("/deleteUploads", func(c *gin.Context) {
-		id := c.Query("id")
-		conv, err := strconv.Atoi(id)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = s.File.Delete(conv)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// FIXME: The redirect only seems to work with this status code.
-		c.Redirect(http.StatusMovedPermanently, "/")
-	})
-
-	// Capture a Sentry error when there is a 500 error.
-	r.GET("/error", controllers.SentryError)
-
-	// Sentry recovers from panic errors
-	// and creates an issue, if a issues for
-	// fatal errors have been set.
-	r.GET("/fatal", controllers.SentryRecover)
-
-	// Cookie example
-	r.GET("/cookie", controllers.Cookie)
-
-	// Query string parameters are parsed using the existing underlying request object.
-	// The request responds to a url matching:  /welcome?firstname=Jane&lastname=Doe.
-	// Check out http://localhost:8080/welcome?firstname=Jane&lastname=Doe
-	r.GET("/welcome", controllers.QueryParams)
-
-	controllers.V1(r)
-	controllers.V2(r)
+	file := r.Group("/file")
+	{
+		file.POST("/upload", fileController.Upload)
+		file.POST("/download", fileController.Download)
+		file.POST("/delete", fileController.Delete)
+	}
 
 	// Run the server per default on port 8080
 	r.Run(":3004")

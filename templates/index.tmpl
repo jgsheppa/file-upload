@@ -2,16 +2,7 @@
 	<h1>
 		{{ .title }}
 	</h1>
-  <ol>
-    <li><a href="/ping">Ping Example</a></li>
-    <li><a href="/httpRedirect">HTTP Redirect</a></li>
-    <li><a href="/routerRedirect">Router Redirect</a></li>
-    <li><a href="/cookie">Cookie Example</a></li>
-    <li><a href="/welcome">Query Parameter Example</a></li>
-    <li><a href="/v1/login">Grouping Example: Login V1</a></li>
-    <li><a href="/v2/login">Grouping Example: Login V2</a></li>
-  </ol>
-  <form action="/upload" method="POST" enctype="multipart/form-data" >
+  <form action="/file/upload" method="POST" enctype="multipart/form-data" >
     <label for="upload">Choose a text file:</label>
     <input type="file" id="upload" multiple name="upload[]" accept="text/plain application/pdf">
     <button type="submit">Upload</button>
@@ -22,10 +13,10 @@
     {{ range .uploads }}
       <li>
         <p>{{.Filename}}</p>
-        <form action="/deleteUploads?id={{.ID}}" method="POST">
+        <form action="/file/delete?id={{.ID}}" method="POST">
           <button type="submit">Delete Upload</button>
         </form>
-        <form action="/download?id={{.ID}}" method="POST">
+        <form action="/file/download?id={{.ID}}" method="POST">
           <button type="submit">Download</button>
         </form>
       </li>

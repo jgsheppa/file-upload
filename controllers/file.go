@@ -54,7 +54,7 @@ func (f *File) Upload(c *gin.Context) {
 			return
 		}
 	}
-	c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
+	c.Redirect(http.StatusFound, "/")
 }
 
 func (f *File) Download(c *gin.Context) {
@@ -67,5 +67,30 @@ func (f *File) Download(c *gin.Context) {
 
 	c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+file.Filename+`"`)
 	http.ServeContent(c.Writer, c.Request, file.Filename, file.UpdatedAt, bytes.NewReader(file.FileBlob))
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.Redirect(http.StatusFound, "/")
+}
+
+func (f *File) Delete(c *gin.Context) {
+	id := c.Query("id")
+	conv, err := strconv.Atoi(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = f.fs.Delete(conv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.Redirect(http.StatusFound, "/")
+}
+
+func (f *File) GetFiles(c *gin.Context) {
+	files, err := f.fs.GetAll()
+	if err != nil {
+		log.Fatal("Could not retrieve files: %w", err)
+	}
+
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"title":   "Main website",
+		"uploads": files,
+	})
 }

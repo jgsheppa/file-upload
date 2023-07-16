@@ -14,10 +14,6 @@ import (
 )
 
 func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 	sentryKey := os.Getenv("SENTRY_KEY")
 	environment := os.Getenv("ENVIRONMENT")
 	if err := sentry.Init(sentry.ClientOptions{
@@ -35,9 +31,12 @@ func init() {
 	}
 }
 func main() {
-
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	s := models.NewServices("dev.db")
-	err := s.AutoMigrate()
+	err = s.AutoMigrate()
 	if err != nil {
 		log.Fatal("Could not migrate database: %w", err)
 	}

@@ -3,6 +3,4 @@ dev.*
 
 .env
 
-Dockerfile
-
 fly.toml

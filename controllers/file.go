@@ -90,7 +90,7 @@ func (f *File) GetFiles(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
-		"title":   "Main website",
+		"title":   "File Upload",
 		"uploads": files,
 	})
 }

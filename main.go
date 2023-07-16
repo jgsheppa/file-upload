@@ -16,7 +16,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file: %v\n", err)
 	}
 	sentryKey := os.Getenv("SENTRY_KEY")
 	environment := os.Getenv("ENVIRONMENT")

@@ -13,7 +13,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func init() {
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	sentryKey := os.Getenv("SENTRY_KEY")
 	environment := os.Getenv("ENVIRONMENT")
 	if err := sentry.Init(sentry.ClientOptions{
@@ -29,12 +33,7 @@ func init() {
 	}); err != nil {
 		fmt.Printf("Sentry initialization failed: %v\n", err)
 	}
-}
-func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+
 	s := models.NewServices("dev.db")
 	err = s.AutoMigrate()
 	if err != nil {

@@ -16,6 +16,6 @@ WORKDIR /
 COPY --from=builder /app ./
 COPY --from=builder /templates ./templates
 
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["./app"]

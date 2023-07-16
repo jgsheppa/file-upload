@@ -68,5 +68,5 @@ func runServer(s *models.Services) {
 	}
 
 	// Run the server per default on port 8080
-	r.Run(":3004")
+	r.Run(":8081")
 }

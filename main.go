@@ -3,31 +3,35 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/getsentry/sentry-go"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/jgsheppa/gin-playground/controllers"
 	"github.com/jgsheppa/gin-playground/models"
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
-func main() {
-	_, err := os.Stat("/etc/secrets/.env")
-	if os.IsNotExist(err) {
-		err = godotenv.Load()
-		if err != nil {
-			log.Fatalf("Error loading .env file: %v\n", err)
-		}
-	} else {
-		err = godotenv.Load("/etc/secrets/.env")
-		if err != nil {
-			log.Fatalf("Error loading .env file: %v\n", err)
+func init() {
+	viper.SetConfigName("config") // name of config file (without extension)
+	viper.SetConfigType("yaml")   // REQUIRED if the config file does not have the extension in the name
+	viper.AddConfigPath("/etc/secrets")
+	viper.AddConfigPath(".") // optionally look for config in the working directory
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+			log.Fatalf("config.yaml not found %v", err)
+		} else {
+			// Config file was found but another error was produced
+			panic(fmt.Errorf("fatal error loading config file: %w", err))
 		}
 	}
-	sentryKey := os.Getenv("SENTRY_KEY")
-	environment := os.Getenv("ENVIRONMENT")
+}
+
+func main() {
+
+	sentryKey := viper.GetString("SENTRY_KEY")
+	environment := viper.GetString("ENVIRONMENT")
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:           sentryKey,
 		Environment:   environment,
@@ -43,7 +47,7 @@ func main() {
 	}
 
 	s := models.NewServices("dev.db")
-	err = s.AutoMigrate()
+	err := s.AutoMigrate()
 	if err != nil {
 		log.Fatal("Could not migrate database: %w", err)
 	}

@@ -18,6 +18,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v\n", err)
 	}
+	err = godotenv.Load("/etc/secrets/.env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v\n", err)
+	}
 	sentryKey := os.Getenv("SENTRY_KEY")
 	environment := os.Getenv("ENVIRONMENT")
 	if err := sentry.Init(sentry.ClientOptions{

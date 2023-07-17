@@ -14,13 +14,17 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v\n", err)
-	}
-	err = godotenv.Load("/etc/secrets/.env")
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v\n", err)
+	_, err := os.Stat("/etc/secrets/.env")
+	if os.IsNotExist(err) {
+		err = godotenv.Load()
+		if err != nil {
+			log.Fatalf("Error loading .env file: %v\n", err)
+		}
+	} else {
+		err = godotenv.Load("/etc/secrets/.env")
+		if err != nil {
+			log.Fatalf("Error loading .env file: %v\n", err)
+		}
 	}
 	sentryKey := os.Getenv("SENTRY_KEY")
 	environment := os.Getenv("ENVIRONMENT")

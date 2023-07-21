@@ -76,10 +76,12 @@ func (f *File) Delete(c *gin.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	err = f.fs.Delete(conv)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	c.Redirect(http.StatusFound, "/")
 }
 

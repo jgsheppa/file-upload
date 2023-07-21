@@ -13,10 +13,10 @@ import (
 )
 
 func init() {
-	viper.SetConfigName("config") // name of config file (without extension)
-	viper.SetConfigType("yaml")   // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath("/etc/secrets")
-	viper.AddConfigPath(".") // optionally look for config in the working directory
+	viper.SetConfigName("config")       // name of config file (without extension)
+	viper.SetConfigType("yaml")         // REQUIRED if the config file does not have the extension in the name
+	viper.AddConfigPath("/etc/secrets") // Used for deployments to Render
+	viper.AddConfigPath(".")            // optionally look for config in the working directory
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found; ignore error if desired
@@ -29,7 +29,11 @@ func init() {
 }
 
 func main() {
+	sentryInit()
+	runServer()
+}
 
+func sentryInit() {
 	sentryKey := viper.GetString("SENTRY_KEY")
 	environment := viper.GetString("ENVIRONMENT")
 	if err := sentry.Init(sentry.ClientOptions{
@@ -45,28 +49,23 @@ func main() {
 	}); err != nil {
 		fmt.Printf("Sentry initialization failed: %v\n", err)
 	}
+}
 
-	s := models.NewServices("dev.db")
+func runServer() {
+	dbName := viper.GetString("DATABASE_NAME")
+
+	s := models.NewServices(dbName + ".db")
 	err := s.AutoMigrate()
 	if err != nil {
 		log.Fatal("Could not migrate database: %w", err)
 	}
-	runServer(s)
-}
 
-func runServer(s *models.Services) {
 	fileController := controllers.NewFile(s.File)
 
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 	r.LoadHTMLGlob("templates/*")
 	r.Use(sentrygin.New(sentrygin.Options{}))
-
-	// Could be used in an endpoint to identify which users
-	// have had issues with specific endpoints.
-	sentry.ConfigureScope(func(scope *sentry.Scope) {
-		scope.SetUser(sentry.User{Email: "jane.doe@example.com"})
-	})
 
 	r.GET("/", fileController.GetFiles)
 
@@ -78,5 +77,5 @@ func runServer(s *models.Services) {
 	}
 
 	// Run the server per default on port 8080
-	r.Run(":8081")
+	r.Run(":8080")
 }

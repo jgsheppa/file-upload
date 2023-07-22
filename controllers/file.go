@@ -47,7 +47,7 @@ func (f *File) Upload(c *gin.Context) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("could not copy buffer for UploadMultiple endpoint: %s", err.Error()))
 		}
 
-		err = f.fs.CreateFile(&models.File{Filename: file.Filename, FileBlob: buf.Bytes()})
+		err = f.fs.Create(&models.File{Filename: file.Filename, FileBlob: buf.Bytes()})
 		if err != nil {
 			sentry.CaptureException(fmt.Errorf("could not create file %s for UploadMultiple endpoint", file.Filename))
 			c.String(http.StatusBadRequest, fmt.Sprintf("could not create file for UploadMultiple endpoint: %s", err.Error()))
@@ -63,7 +63,7 @@ func (f *File) Download(c *gin.Context) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	file, err := f.fs.Get(idAsInt)
+	file, err := f.fs.Find(idAsInt)
 
 	c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+file.Filename+`"`)
 	http.ServeContent(c.Writer, c.Request, file.Filename, file.UpdatedAt, bytes.NewReader(file.FileBlob))

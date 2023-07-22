@@ -9,8 +9,8 @@ type File struct {
 }
 
 type FileDB interface {
-	Get(id int) (*File, error)
-	CreateFile(file *File) error
+	Find(id int) (*File, error)
+	Create(file *File) error
 	Delete(id int) error
 	GetAll() ([]*File, error)
 }
@@ -37,11 +37,11 @@ type fileGorm struct {
 	db *gorm.DB
 }
 
-func (fg *fileGorm) CreateFile(file *File) error {
+func (fg *fileGorm) Create(file *File) error {
 	return fg.db.Create(file).Error
 }
 
-func (fg *fileGorm) Get(id int) (*File, error) {
+func (fg *fileGorm) Find(id int) (*File, error) {
 	var file File
 	err := fg.db.Where("id = ?", id).First(&file).Error
 	if err != nil {

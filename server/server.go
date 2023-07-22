@@ -12,7 +12,7 @@ func RunServer(s *models.Services) *gin.Engine {
 
 	r := gin.Default()
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
-	r.LoadHTMLGlob("../templates/*")
+	r.LoadHTMLGlob("templates/*")
 	r.Use(sentrygin.New(sentrygin.Options{}))
 
 	r.GET("/", fileController.GetFiles)

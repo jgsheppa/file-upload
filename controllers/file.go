@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -45,6 +44,7 @@ func (f *File) Upload(c *gin.Context) {
 		if _, err := io.Copy(buf, content); err != nil {
 			sentry.CaptureException(errors.New("could not copy buffer for UploadMultiple endpoint"))
 			c.String(http.StatusBadRequest, fmt.Sprintf("could not copy buffer for UploadMultiple endpoint: %s", err.Error()))
+			return
 		}
 
 		err = f.fs.Create(&models.File{Filename: file.Filename, FileBlob: buf.Bytes()})
@@ -61,7 +61,9 @@ func (f *File) Download(c *gin.Context) {
 	id := c.Query("id")
 	idAsInt, err := strconv.Atoi(id)
 	if err != nil {
-		log.Fatal(err)
+		sentry.CaptureException(fmt.Errorf("could not download file: %w", err))
+		c.String(http.StatusBadRequest, fmt.Sprintf("could not download file %s:", err.Error()))
+		return
 	}
 	file, err := f.fs.Find(idAsInt)
 
@@ -74,12 +76,16 @@ func (f *File) Delete(c *gin.Context) {
 	id := c.Query("id")
 	conv, err := strconv.Atoi(id)
 	if err != nil {
-		log.Fatal(err)
+		sentry.CaptureException(fmt.Errorf("could not delete file: %w", err))
+		c.String(http.StatusBadRequest, fmt.Sprintf("could not delete file %s:", err.Error()))
+		return
 	}
 
 	err = f.fs.Delete(conv)
 	if err != nil {
-		log.Fatal(err)
+		sentry.CaptureException(fmt.Errorf("could not delete file: %w", err))
+		c.String(http.StatusBadRequest, fmt.Sprintf("could not delete file %s:", err.Error()))
+		return
 	}
 
 	c.Redirect(http.StatusFound, "/")
@@ -88,7 +94,9 @@ func (f *File) Delete(c *gin.Context) {
 func (f *File) GetFiles(c *gin.Context) {
 	files, err := f.fs.GetAll()
 	if err != nil {
-		log.Fatal("Could not retrieve files: %w", err)
+		sentry.CaptureException(fmt.Errorf("could not retrieve files: %w", err))
+		c.String(http.StatusBadRequest, fmt.Sprintf("could not retrieve files %s:", err.Error()))
+		return
 	}
 
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{

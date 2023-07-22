@@ -13,6 +13,15 @@ import (
 )
 
 func init() {
+	configInit()
+}
+
+func main() {
+	sentrySetup()
+	runServer()
+}
+
+func configInit() {
 	viper.SetConfigName("config")       // name of config file (without extension)
 	viper.SetConfigType("yaml")         // REQUIRED if the config file does not have the extension in the name
 	viper.AddConfigPath("/etc/secrets") // Used for deployments to Render
@@ -28,12 +37,7 @@ func init() {
 	}
 }
 
-func main() {
-	sentryInit()
-	runServer()
-}
-
-func sentryInit() {
+func sentrySetup() {
 	sentryKey := viper.GetString("SENTRY_KEY")
 	environment := viper.GetString("ENVIRONMENT")
 	if err := sentry.Init(sentry.ClientOptions{

@@ -8,7 +8,6 @@ import (
 )
 
 func RunServer(s *models.Services) *gin.Engine {
-
 	fileController := controllers.NewFile(s.File)
 
 	r := gin.Default()

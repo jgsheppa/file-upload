@@ -1,7 +1,6 @@
 /tmp
 dev.*
 
-.env
 config.yaml
 
 fly.toml

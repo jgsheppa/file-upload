@@ -1,6 +1,9 @@
-# gin-playground
+# File Upload Server
 
-A playground for the Gin web framework
+This is a simple file upload server using the `gin-gonic` web framework, `gorm` ORM, and `sqlite`.
+There is a simple UI using HTML templates if you would like to interact with the app in the browser.
+
+The latest commit is also live on [Render]()
 
 ## Setup
 
